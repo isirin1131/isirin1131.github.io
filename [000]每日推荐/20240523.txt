@@ -1,2 +1,0 @@
-写网络的系列博文，不错
-https://fasionchan.com/network/overview/tcp-ip/
