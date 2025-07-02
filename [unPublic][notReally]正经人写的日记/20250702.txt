@@ -1,0 +1,11 @@
+what i did today
+
+由于最先就做极简的 所以开始时不使用 TCP 握手，而是在数据包里直接写一个魔术头
+这方面使用 lwip 的 sendmsg 实现
+因为这个魔术头放在包头 所以为了防数据拷贝得把 single pbuf 关了
+另外就是决定还是用 netty 做安卓端的监听
+毕竟 java.io.packagechannel 虽然是 NIO 的 但实现起来不必 netty 简单
+而 packagesocket 是 BIO 的 会有延迟
+所以宁愿费劲读 netty 的 user guide 和 api doc
+
+明天再继续吧 预计这周就能搞好
