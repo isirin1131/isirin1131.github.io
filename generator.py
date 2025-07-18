@@ -67,11 +67,11 @@ maintmp = '''
             所有文章仅代表个人观点。
         </p>
 
-        <pre>
-            #set text(font: ("Sarasa Fixed Slab SC"), lang:("zh"))
+        <pre style="color: aliceblue; width: 100%; font-family:'Courier New', Courier, monospace; width: 100%; font-size: small;">
+#set text(font: ("Sarasa Fixed Slab SC"), lang:("zh"))
+#show math.equation: set text(font: "Neo Euler")
+        </pre>
 
-            #show math.equation: set text(font: "Neo Euler")
-            </pre>
         <hr />
 '''
 
