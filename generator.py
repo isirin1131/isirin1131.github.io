@@ -66,6 +66,12 @@ maintmp = '''
             分享个人文章，题材多样。<br>
             所有文章仅代表个人观点。
         </p>
+
+        <pre>
+            #set text(font: ("Sarasa Fixed Slab SC"), lang:("zh"))
+
+            #show math.equation: set text(font: "Neo Euler")
+            </pre>
         <hr />
 '''
 
