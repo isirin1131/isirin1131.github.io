@@ -1,4 +1,12 @@
+import re
 from pathlib import Path
+
+def natural_sort_key(filename):
+    """自然排序键函数，确保跨平台一致性"""
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+    
+    return [convert(c) for c in re.split('([0-9]+)', str(filename))]
 
 files_and_dirs = Path("./")
 
@@ -75,22 +83,29 @@ maintmp = '''
         <hr />
 '''
 
+# 获取所有匹配的目录并排序
+dirs = list(ret)
+dirs.sort(key=lambda x: natural_sort_key(x.name))
+
 # 此循环生成子页面的 html，并将其链接到 index.html 中
-for ite in ret :
+for ite in dirs:
     tmp = '''
 <h1 style="color: aliceblue; width: 100%; font-family: 'Courier New', Courier, monospace;">
 '''
     tmp = tmp + ite.name[5:] + "</h1>\n"
+    
     sub = Path("./" + ite.name)
-    for subite in sub.iterdir() :
+    # 获取子目录中的所有文件并排序
+    files = list(sub.iterdir())
+    files.sort(key=lambda x: natural_sort_key(x.name))
+    
+    for subite in files:
         tmp += ('<a href="../' + ite.name + "/" + subite.name + '" class="myhref" target="_blank">' + subite.stem + '</a><br>\n')
 
-    with open("./object/" + ite.name + ".html", mode="w", encoding="utf-8") as f :
+    with open("./object/" + ite.name + ".html", mode="w", encoding="utf-8") as f:
         f.write(header0 + ite.name[5:] + header1 + tmp + end)
     
     maintmp = maintmp + '<a href="./object/' + ite.name + '''.html" style="color: yellowgreen; font-weight: lighter; font-size: x-large; width: 100%; font-family: 'Courier New', Courier, monospace;" target="_blank">''' + ite.name[5:] + '</a><br>\n'
 
-    
-    
-with open("./index.html", mode="w", encoding="utf-8") as f :
+with open("./index.html", mode="w", encoding="utf-8") as f:
     f.write(header0 + "zhecai's blog" + header1 + maintmp + end)
