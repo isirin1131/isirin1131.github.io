@@ -78,7 +78,19 @@ maintmp = '''
         <pre style="color: aliceblue; width: 100%; font-family:'Courier New', Courier, monospace; width: 100%; font-size: small;">
 #set text(font: ("Sarasa Fixed Slab SC"), lang:("zh"))
 #show math.equation: set text(font: "Neo Euler")
+论文字体：
+#set text(
+  // 英文优先使用 New Computer Modern (学术巅峰)
+  // 中文自动回退到 Source Han Serif SC (现代正式)
+  font: ("New Computer Modern", "Source Han Serif SC"),
+  lang: "zh"
+)
         </pre>
+        <p style="color: aliceblue; width: 100%; font-family:'Courier New', Courier, monospace; width: 100%; font-size: large;">
+            友情链接<br>
+            http://zelog.xyz/
+        </p>
+
 
         <hr />
 '''
