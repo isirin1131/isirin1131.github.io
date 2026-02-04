@@ -13,38 +13,26 @@
 
   // Paper title
   title: [
-    FlowWrite 开发简述与技术报告
+    FlowWrite 架构简述与技术报告
   ],
 
   // Author list
   authors: (
-    (name: "田照涛. Author", at: "uni", email: "mail@example.com"),
-    (name: "P. Coauthor", at: ("uni", "third"), orcid: "0000-0000-0000-0000"),
-    (name: "J. Cockcroft", at: ("INP", "third")),
-    (
-      name: "C. D. Anderson",
-      at: "INP",
-      note: "Present address: Home Office, City, Country",
-    ),
-    (names: ("N. Bohr", "A. Einstein", "M. Curie", "E. Lawrence"), at: "INP"),
-    //(names: ("A. Group", "O. F. People"), at: "Single Use Primary Affiliation, Shortcut Way"),
+    (name: "田照涛. Author", at: "gzqy", email: "isirin1131@outlook.com", orcid: "0009-0002-4673-9698"),
   ),
   affiliations: (
-    uni: [#link("https://ror.org/...")[贵州轻工职业大学], 贵州, 中国],
-    INP: [#link("https://ror.org/...")[Institute of Nobel Physics], Stockhold, Sweden],
-    third: "The Third Institute, City, Country",
+    gzqy: [#link("https://www.gzqy.cn")[贵州轻工职业大学], 贵州, 中国],
   ),
   group-by-affiliation: true,
 
   // Paper abstract
   abstract: [
-    不过，计算机科学的核心是证明（递归）、算法（递归）、编程语言（λ演算）、操作系统（指针）、编译器（λ演算）——所以归根结底，一所不教 C 语言也不教 Scheme 的 Java 学校，其实也算不上真正意义上的计算机科学。函数柯里化这个概念在现实世界中或许毫无用处，但它显然是计算机科学研究生院的先决条件。我不明白，为什么计算机科学院校的课程委员会成员会允许他们的课程被简化到这种程度，以至于不仅培养不出合格的程序员 ，甚至连能拿到博士学位、能和他们竞争工作的计算机科学研究生都培养不出来。哦，等等。算了。也许我明白了。
-
+    FlowWrite 是一款专注于 AI 辅助写作的软件，专门面向高质量长篇写作的场景。软件提供蓝图式工作流编排和多种工作流控件（环状运行、冻结等）、外部 Restful API 接口、内置 agent 和官方 agent skill。本文将从产品愿景、技术选型、交互设计、软件架构和具体用例等方面介绍这款软件。软件源代码在 Github 开源 #link("https://github.com/isirin1131/FlowWrite")[FlowWrite]
   ],
 
   // Other optional information
   date: [(Drafted #datetime.today().display("[day] [month repr:long] [year]");)],
-  //doi: "https://doi.org/10.1103/PhysRevAccelBeams.00.000000",
+  // doi: "https://doi.org/10.1103/PhysRevAccelBeams.00.000000",
   header: (
     //title: [PHYSICAL REVIEW ACCELERATORS AND BEAMS *00*, 000000 (0000)],
     left: (even: none, odd: none),
@@ -59,11 +47,7 @@
     ],
   ),
   footnote-text: [
-    Licensed under the terms of the
-    #link(
-      "https://creativecommons.org/licenses/by/4.0/",
-    )[Creative Commons Attribution 4.0 International]
-    license. Further distribution of this work must maintain attribution to the authors and document title.
+    
   ],
   //wide-footnotes: true,
 
@@ -73,9 +57,8 @@
 
 #set text(
   // 英文优先使用 New Computer Modern (学术巅峰)
-  // 中文自动回退到 Source Han Serif (现代正式)
+  // 中文自动回退到 Source Han Serif SC (现代正式)
   font: ("New Computer Modern", "Source Han Serif SC"),
-  size: 10.5pt, // 相当于中文五号字
   lang: "zh"
 )
 
@@ -95,10 +78,40 @@
 
 
 
-= Introduction
+= 引言
+
+受限于如今的模型性能，AI 辅助写作很难找到一站式的解决方案，为此，我希望提供一种高度定制化且足够现代的范式来回答这个问题。
+
+当以 chatgpt 为首的，基于 LLM 的 chat-ai-app 刚刚进入人们视野的时候，第一个被广泛关注的概念是*提示词工程*#footnote[reddit 的 PromptEngineering 板块创建于 2021年2月26日]，而在 2025 年初到 2026 年初的 AI 编程大爆发和 agent 大爆发中#footnote[Anthropic 于 2024年11月25日开源了他们的 MCP 协议，可以看作是 agent 时代开始的里程碑事件]，另一个在幕后扮演重要角色的概念是*上下文工程*。这两个概念几乎涵盖了当下 LLM 应用的所有注意事项，而对于 AI 辅助写作这个领域，FlowWrite 提供的范式同样围绕这两个概念展开。
+
+@zhang2026recursivelanguagemodels
+
+
+
+== 问题
+
+众所周知，今天主流 LLM 的上下文窗口十分有限，即使有足够的窗口长度，模型的注意力也有限。截至 2026 年 2 月，我们依然不能说所谓“上下文腐化”@hong2025context 的现象已经不存在了，作为侧面的佐证，上下文管理器仍然是各 AI 编程工具的重要组件。
+
+
+
+```ts
+class FlowWriteDB extends Dexie {
+  workflows!: Table<WorkflowRecord>;
+  settings!: Table<SettingsRecord>;
+
+  constructor() {
+    super('FlowWriteDB');
+
+    this.version(1).stores({
+      workflows: 'id, name, updatedAt',
+      settings: 'key'
+    });
+  }
+}
+```
 
 This is a template for submission of manuscripts to @PRAB // abbreviation
-using the great, modern and *blazingly fast* typesetting system Typst @sillyTalkUnderMoon
+using the great, modern and *blazingly fast* typesetting system Typst 
 //
 Equations can be typeset inline like $f_"a"(x)$, and in display mode:
 
@@ -137,10 +150,7 @@ Referring to @sec:test or the data in @tab:parameters is also possible.
 #lorem(100)
 
 壁垒击穿效应。*由于 AI 编码的应用*，IT 行业的人才更替周期已经剧变，好在行业整体需求量暂
-时并未增长过多，否则我将在五年内面临比现在和以往严重的多的学历歧视。实际上绞肉机已经开
-始了，好比地表空气的整体成分发生了不算微小的突变，它不会影响你今天的生活，却会改变千年
-后人类整体的生物特征。另一个会快速迎来剧变的行业是教育，我不知道其他行业的价值如何，但
-在此次生成式 AI 浪潮下，这两个行业的变化意义是显著的。熵增开始了
+时并未增长过多，否则我将在五年内面临比现在和以往严重的多的学历歧视。实际上绞肉机已经开始了，好比地表空气的整体成分发生了不算微小的突变，它不会影响你今天的生活，却会改变千年后人类整体的生物特征。另一个会快速迎来剧变的行业是教育，我不知道其他行业的价值如何，但在此次生成式 AI 浪潮下，这两个行业的变化意义是显著的。熵增开始了
 == Subsection
 #lorem(100)
 
@@ -281,16 +291,15 @@ For more details, refer to https://typst.app/universe/package/glossy.
 
 
 
-
-
+= 总结
 
 
 
 #show heading: set heading(numbering: none)
 
-= ACKNOWLEDGMENTS
+= 致谢
 
-We thank ...
+感谢我的家人、老师和朋友
 
 
 #bibliography("ref.bib")
