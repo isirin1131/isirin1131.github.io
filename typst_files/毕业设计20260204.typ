@@ -13,7 +13,7 @@
 
   // Paper title
   title: [
-    FlowCabel 技术报告
+    FlowCabal 技术报告
   ],
 
   // Author list
@@ -29,7 +29,7 @@
 
   // Paper abstract
   abstract: [
-    FlowCabel 是一款专注于 AI 辅助写作的软件，专门面向高质量长篇写作的场景。软件提供蓝图式工作流编排、高级查询函数（RSA、RLM 等）、多种工作流控件（环状运行、冻结等）、内置 agent、外部 Restful API 接口和官方 agent skill。本文将从产品愿景、关键功能、技术选型、软件架构、交互设计和具体用例等方面介绍这款软件。软件源代码在 #link("https://github.com/isirin1131/FlowCabel")[Github] 开源
+    FlowCabal 是一款专注于 AI 辅助写作的软件，专门面向高质量长篇写作的场景。软件提供蓝图式工作流编排、高级查询函数（RSA、RLM 等）、多种工作流控件（环状运行、冻结等）、内置 agent、外部 Restful API 接口和官方 agent skill。本文将从产品愿景、关键功能、技术选型、软件架构、交互设计和具体用例等方面介绍这款软件。软件源代码在 #link("https://github.com/isirin1131/FlowCabal")[Github] 开源
   ],
 
   // Other optional information
@@ -90,9 +90,9 @@
 
 = 引言
 
-受限于如今的模型性能，AI 辅助写作很难找到一站式的解决方案，为此，FlowCabel 希望提供一种高度定制化且足够现代的范式来回答这个问题。
+受限于如今的模型性能，AI 辅助写作很难找到一站式的解决方案，为此，FlowCabal 希望提供一种高度定制化且足够现代的范式来回答这个问题。
 
-当以 chatgpt 为首的，基于 LLM 的 chat-ai-app 刚刚进入人们视野的时候，第一个被广泛关注的概念是*提示词工程*#footnote[reddit 的 PromptEngineering 板块创建于 2021年2月26日]，而在 2025 年初到 2026 年初的 AI 编程大爆发和 agent 大爆发中#footnote[Anthropic 于 2024年11月25日开源了他们的 MCP 协议，可以看作是 agent 时代开始的里程碑事件]，另一个在幕后扮演重要角色的概念是*上下文工程*。这两个概念几乎涵盖了当下 LLM 应用的所有注意事项，而对于 AI 辅助写作这个领域，FlowCabel 提供的范式同样围绕这两个概念展开。
+当以 chatgpt 为首的，基于 LLM 的 chat-ai-app 刚刚进入人们视野的时候，第一个被广泛关注的概念是*提示词工程*#footnote[reddit 的 PromptEngineering 板块创建于 2021年2月26日]，而在 2025 年初到 2026 年初的 AI 编程大爆发和 agent 大爆发中#footnote[Anthropic 于 2024年11月25日开源了他们的 MCP 协议，可以看作是 agent 时代开始的里程碑事件]，另一个在幕后扮演重要角色的概念是*上下文工程*。这两个概念几乎涵盖了当下 LLM 应用的所有注意事项，而对于 AI 辅助写作这个领域，FlowCabal 提供的范式同样围绕这两个概念展开。
 
 = 关键功能
 
@@ -113,17 +113,17 @@
 
 而节点工作流则是这种形式的超集，Unreal Engine 的蓝图、Comfy-UI 或是如今已经成为 agent 领域经典实践的 langGraph 都采用了这种组织方式。
 
-FlowCabel 的一个节点工作流可以描述为 `[Model]_n`，其中 `Model_k.query = fuc_k(m.Answer | m in M_k)`，`M_k` 是 `[Model]_n` 的一个子集，`fuc_k` 是自定义函数，比如 `[fuc_add(a, b, c) -> a + "+" + b + "+" + c]["1", "2", "3"] = "1+2+3"`。
+FlowCabal 的一个节点工作流可以描述为 `[Model]_n`，其中 `Model_k.query = fuc_k(m.Answer | m in M_k)`，`M_k` 是 `[Model]_n` 的一个子集，`fuc_k` 是自定义函数，比如 `[fuc_add(a, b, c) -> a + "+" + b + "+" + c]["1", "2", "3"] = "1+2+3"`。
 
 这样的工作流一般来说会有满足 DAG 形式的依赖关系，使用 Kahn 算法排序后即可逐个解析，如果有环状依赖出现，在工程上则可以设置停机收敛条件。
 
-FlowCabel 还提供了不少有趣且实用的功能，这些功能使 FlowCabel 的境界达到了节点式工作流的超集。这些功能在 @sec:advfuc 和 @sec:agent 中有进一步的描述。
+FlowCabal 还提供了不少有趣且实用的功能，这些功能使 FlowCabal 的境界达到了节点式工作流的超集。这些功能在 @sec:advfuc 和 @sec:agent 中有进一步的描述。
 
-另一个值得一提的现象是节点工作流的调用方式天然带有上下文压缩的色彩，`M_k.query` 完全不会出现在其余任何 `M_p.query` 中。@sec:contxt 详细介绍了 FlowCabel 的上下文策略。
+另一个值得一提的现象是节点工作流的调用方式天然带有上下文压缩的色彩，`M_k.query` 完全不会出现在其余任何 `M_p.query` 中。@sec:contxt 详细介绍了 FlowCabal 的上下文策略。
 
 == 高级查询函数与高级功能 <sec:advfuc>
 
-有非常多的研究如 RSA@venkatraman2025recursiveselfaggregationunlocksdeep 和 RLM@zhang2026recursivelanguagemodels 表明，递归和复杂迭代可以作为 LLM 推理的强力可选项，这些推理过程显然是 @sec:node 中提到的节点工作流无法涵盖的。FlowCabel 提供了一组高级查询函数 `[adv_fuc]_n`，可以在工作流中使用。
+有非常多的研究如 RSA@venkatraman2025recursiveselfaggregationunlocksdeep 和 RLM@zhang2026recursivelanguagemodels 表明，递归和复杂迭代可以作为 LLM 推理的强力可选项，这些推理过程显然是 @sec:node 中提到的节点工作流无法涵盖的。FlowCabal 提供了一组高级查询函数 `[adv_fuc]_n`，可以在工作流中使用。
 
 由于 LLM 的不稳定性，工作流的每个节点 `Model_k` 可能都会有多次重试，所以 FlowCabal 会默认保留每个节点的 `Model_k.Answer` 的历史记录，并提供 “冻结” 功能使一个节点在本次工作流运行中永不重试。基于这两点设计，一个 FlowCabal 工作流的运行依然按照 Kahn 序一个一个解析节点——只是对人类介入的需求过于高了。
 
@@ -146,12 +146,12 @@ FlowCabal 的 agent 功能不只是用于编写工作流，还用于监控工作
 
 
 ```ts
-class FlowCabelDB extends Dexie {
+class FlowCabalDB extends Dexie {
   workflows!: Table<WorkflowRecord>;
   settings!: Table<SettingsRecord>;
 
   constructor() {
-    super('FlowCabelDB');
+    super('FlowCabalDB');
 
     this.version(1).stores({
       workflows: 'id, name, updatedAt',
