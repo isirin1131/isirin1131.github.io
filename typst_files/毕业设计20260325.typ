@@ -1,6 +1,7 @@
-#import "@preview/gzqy-thesis:0.1.0": *
+#import "@preview/community-gzqy-thesis:0.1.0": *
+#import "@preview/fletcher:0.5.8" as fletcher: diagram, node, edge
 
-#show: gzqy-thesis.with(
+#show: community-gzqy-thesis.with(
   title: "FlowCabal\n Agent 半自动化写作辅助工具",
   major: "大数据技术",
   advisor: "曾小爽",
@@ -9,10 +10,10 @@
   year: "2026",
   month: "3",
   abstract-zh: [
-    FlowCabal 是一款专注于 AI 辅助写作的软件，专门面向高质量长篇写作的场景。软件提供蓝图式工作流编排、内置记忆文件和 agent 交互方式。本文将从产品功能、技术选型、软件架构、交互设计和具体用例等方面介绍这款软件。软件源代码在 #link("https://github.com/isirin1131/FlowCabal")[https://github.com/isirin1131/FlowCabal] 开源
+    FlowCabal 是一款专注于 AI 辅助写作的软件，专门面向高质量长篇写作的场景。软件提供蓝图式工作流编排、内置记忆文件和 agent 交互方式。本文将从产品功能、技术选型、软件架构和具体用例等方面介绍这款软件。软件源代码在 #link("https://github.com/isirin1131/FlowCabal")[https://github.com/isirin1131/FlowCabal] 开源
 ],
   keywords-zh: ("工作流", "智能体", "记忆"),
-  abstract-en: [FlowCabal is a software focused on AI-assisted writing, specifically designed for high-quality long-form writing scenarios. The software provides blueprint-style workflow orchestration, built-in memory files, and agent interaction methods. This article introduces the software from aspects such as product features, technology selection, software architecture, interaction design, and specific use cases. The source code of the software is open-sourced at #link("https://github.com/isirin1131/FlowCabal")[https://github.com/isirin1131/FlowCabal].],
+  abstract-en: [FlowCabal is a software focused on AI-assisted writing, specifically designed for high-quality long-form writing scenarios. The software provides blueprint-style workflow orchestration, built-in memory files, and agent interaction methods. This article introduces the software from aspects such as product features, technology selection, software architecture, and specific use cases. The source code of the software is open-sourced at #link("https://github.com/isirin1131/FlowCabal")[https://github.com/isirin1131/FlowCabal].],
   keywords-en: ("workflow", "agent", "memory"),
 )
 
@@ -85,23 +86,70 @@ FlowCabal 的 Agent 不仅负责文本生成，还承担上下文注入和约束
 每个节点的输出以多版本形式保留，版本切换仅修改当前指针而不删除旧版本。用户既可以在不同版本间对比择优，也可以直接手动编辑某个节点的输出作为新版本。此外，工作流支持 step 模式——逐层执行，每层完成后暂停等待用户确认。用户可在暂停期间审视结果、调整参数或编辑输出，然后再推进到下一层。这种逐层暂停的机制将一个高度自动化的流水线转变为人机协作的迭代过程。
 
 = 技术选型
-== 前端技术
 
-== 后端技术
+FlowCabal 是纯客户端、无服务器的本地应用程序，当前以命令行界面（CLI）发布，但在架构上预留了 Web UI 的接入能力。本节从编程语言与运行时、核心依赖库和存储方案三个维度阐述技术选型的理由。
 
-== AI 模型接入
+== 编程语言与运行时
+
+FlowCabal 选择 TypeScript 作为开发语言，Bun 作为运行时。选择 TypeScript 而非 Python 或 Go 的主要考量有三：其一，TypeScript 的静态类型系统为工作流引擎中大量的类型定义（节点、TextBlock、版本缓存等）提供了编译期保障；其二，TypeScript 原生的 `async/await` 和 `Promise` 机制天然适配 LLM 流式调用和 DAG 逐层并行执行的场景；其三，未来接入 Web UI 时可以在前后端之间共享类型定义和数据结构，避免序列化层的重复开发。
+
+Bun 相较于 Node.js 的优势在于：启动速度更快（冷启动约为 Node.js 的四分之一），原生支持 TypeScript 无需额外的编译步骤，且提供了 `bun build --compile` 命令将整个项目打包为单个可执行二进制文件。这种单二进制分发方式借鉴了 Claude Code、OpenCode 等同类 CLI 工具的实践，用户无需预装 Node.js 或执行 `npm install` 即可直接使用。
+
+项目采用 Monorepo 结构，划分为 `engine`（工作流引擎）和 `cli`（命令行界面）两个包。`engine` 作为纯库不包含任何终端 I/O 操作，所有副作用通过事件上报，使得未来的 Web 前端可以调用同一套引擎接口而无需适配。
+
+== 核心依赖库
+
+LLM 集成方面，FlowCabal 选择 Vercel AI SDK（`ai` 及 `@ai-sdk/*` 系列包）作为模型调用层。该 SDK 提供了统一的 Provider 接口，一套代码即可对接 OpenAI、Anthropic、Google、Mistral、xAI、Cohere 等主流模型服务商，同时通过 `openai-compatible` Provider 覆盖 baseURL 即可支持 DeepSeek 等兼容 OpenAI 接口的第三方服务。此外，Vercel AI SDK 内置了 Zod Schema 到 JSON Schema 的自动转换，配合其 tool calling 循环机制，大幅简化了 Agent 工具调用的实现。流式输出方面，`streamText` 接口提供开箱即用的 `AsyncIterable`，使得工作流运行时可以逐块读取生成内容并实时触发事件。
+
+CLI 交互方面，命令解析使用 yargs，交互式提示（如确认、选择）使用 \@clack/prompts。运行时数据校验使用 Zod：所有来自外部的输入（JSON 配置文件、用户填写的工作流定义等）在进入引擎前均通过 Zod Schema 校验，确保类型安全从编译期延伸到运行时。
+
+== 存储方案
+
+FlowCabal 的所有持久化数据——工作流定义、节点输出缓存、记忆文件——均以 JSON 或 Markdown 文件的形式存储在文件系统中，不依赖任何数据库。这一选择基于以下判断：典型的 FlowCabal 项目包含 10 至 50 个节点，每个节点不超过 10 个版本，总数据量通常在 1 MB 以内，纯文件读写完全能满足性能需求；纯文本格式天然支持 Git 版本控制，用户可以对整个项目目录执行 `git diff` 和 `git merge`；此外，零外部依赖意味着用户无需安装 SQLite 或其他存储引擎，降低了部署门槛。
 
 = 软件架构
+
+本章从模块分层、核心数据结构、执行数据流和交互模型四个维度描述 FlowCabal 的软件架构。项目采用 monorepo 结构，分为 `engine`（纯库，零 I/O 假设）和 `cli`（命令行界面）两个包，使得未来的 Web 前端可以调用同一套引擎接口。
+
 == 总体架构
 
-== 核心模块设计
+== 数据流
 
-== 数据流设计
+== 过往决策案例
 
-= 交互设计
-== 界面布局
+FlowCabal 的当前架构并非一蹴而就，而是经历了多轮设计迭代后逐步收敛的结果。本节选取四个具有代表性的架构决策，记录其动机、演化过程和最终定位，以展示软件设计中"从理想方案到实用方案"的典型路径。
 
-== 用户操作流程
+=== 从 Python 后端到纯 TypeScript 单进程
+
+FlowCabal 最初的架构设想是浏览器前端（SvelteFlow 可视化编辑器）加本地 Python 后端的双进程方案。选择 Python 的理由在于其 AI/ML 生态成熟，且 Agent 的工具调用（function calling）在 Python 侧实现可以避免跨进程的 IPC 开销。数据存储使用 SQLite 统一管理工作流定义、执行状态和策展输出，前后端通过 WebSocket 通信。
+
+然而，这一方案在原型开发阶段暴露了显著的复杂度问题：浏览器、Python 后端和 WebSocket 三个组件的生命周期管理和错误传播难以协调；SQLite 与浏览器前端之间的数据同步需要大量的胶水代码；最关键的是，用户需要预装 Python 运行时和相关依赖，与"绿色免安装"的分发理念相悖。
+
+最终选择纯 TypeScript + Bun 单进程方案：Bun 原生支持 TypeScript 编译和执行，`bun build --compile` 可以将整个项目打包为单个可执行二进制文件；Vercel AI SDK 在 TypeScript 侧提供了与 Python 同等水平的 LLM 集成能力；文件系统存储替代 SQLite 后，所有数据天然支持 Git 版本控制。这一决策将三进程的 IPC 复杂度降为零，同时保留了未来接入 Web UI 时前后端共享类型定义的优势。
+
+=== 从三角色 Agent 到单 Agent + tool-use
+
+在 Python 后端时期，Agent 子系统采用了精心设计的三角色架构：Role A（Context Agent）在每个节点执行前检索上下文并注入，Role B（Builder Agent）在执行前提议工作流结构修改，Role C（Monitor Agent）在每个节点执行后进行质量评估并决定是否批准、重试或标记。此外，记忆系统设计了五种侧写类型（角色、情节线、世界状态、主题、文风），配合向量数据库（OpenViking）进行语义检索。
+
+这一设计的问题在于过度工程化：在没有可工作的执行引擎之前，三角色协调逻辑无从验证；五种侧写类型的边界模糊，难以判断一个事实应归入哪种类型；向量检索在小说场景下的效果令人怀疑——伏笔与回收在语义空间中可能距离很远，余弦相似度无法捕捉因果链。
+
+最终架构将三角色合并为单一 Agent，通过 Vercel AI SDK 的 tool calling 机制暴露记忆读写和运行时查询等工具，由 Agent 在推理过程中自主决定何时查询何种信息。记忆系统从五种固定侧写类型改为自由增长的文件结构：`characters/`、`world/`、`voice.md` 作为种子文件，Agent 可以按需创建新文件或更新已有内容。向量检索被完全废弃，取而代之的是 L0（索引）→ L1（记忆文件）→ L2（原稿）的三级渐进加载策略，Agent 通过理解叙事上下文来决定加载路径，而非依赖统计意义上的语义相似性。
+
+=== 从 EventBus 到 State 中心化
+
+早期设计中，模块间的通信依赖 EventBus：UI 通过事件触发执行引擎的操作，执行引擎通过事件向 UI 报告状态变更。这种松耦合的设计在 SvelteFlow 前端时期是合理的，但当项目转向 TUI 界面后暴露了性能问题。
+
+具体而言，TUI 需要实时刷新节点状态（done/stale/pending），而在文件系统存储方案下，每次查询都需要从磁盘读取版本文件。一个包含 10 个节点的工作流每次刷新就需要 20 次以上的文件读取操作，在 Bun 的文件 I/O 下虽然绝对耗时不大，但频繁的异步操作使得 TUI 的渲染逻辑变得复杂——所有查询都必须是异步的，React 组件的状态同步需要额外的 `useEffect` 链。另一个问题是 Agent 的运行时查询不可见：执行循环（`run.ts`）维护了一个私有的 `outputs: Map` 来追踪当前执行结果，Agent 通过 RuntimeContext 接口查询运行时状态时无法读到这个私有 Map。
+
+State 中心化的方案引入了 `state.ts` 作为唯一的内存模型：`loadState()` 在工作区打开时一次性加载所有版本文件到内存，此后所有读操作均为同步、零 I/O 的内存访问。写操作采用"内存先更新 → await 磁盘持久化 → emit StateEvent"的模式，保证内存与磁盘的最终一致性。事件系统也从单一的 EventBus 分化为两个通道：StateEvent 报告持久化状态变更（`version:added`、`nodes:changed` 等），RunEvent 报告临时的执行生命周期事件（`node:start`、`level:done` 等），两者均采用可序列化的 discriminated union 类型，为未来的 Web 前端和事件回放留出空间。
+
+=== 从有状态会话到原子操作函数
+
+State 中心化的架构解决了查询性能和 Agent 可见性问题，但引入了新的复杂度：`state.ts` 承担了存储、计算和事件三重职责，成为一个"上帝对象"；`run.ts` 维护了 `RunHandle`、`RunMode`（auto/step）、事件总线等抽象，使得外部自动化工具（如 Claude Code）难以零成本驱动工作流。对于 Beta 版而言，CLI 是唯一的交互界面，TUI 的实时刷新需求不再是约束条件。
+
+最终的重构将"打开会话对象 → 调用方法"的模式变为"每次调用一个独立函数，加载 → 执行 → 持久化 → 返回"的原子操作模式。`state.ts` 被拆分为 8 个职责单一的模块：`io.ts`（薄 I/O 层）、`nodes.ts`（节点管理）、`targets.ts`（目标集合）、`stale.ts`（过期传播）、`versions.ts`（版本管理）、`todo.ts`（待执行列表计算）、`execute.ts`（执行）和 `preferences.ts`（偏好设置）。
+
+缓存失效机制也随之简化。原方案使用 SHA-256 哈希比对节点 prompt 的结构性变化来判断是否需要重新执行——这需要在每次查询时递归解析所有 TextBlock 并计算哈希，逻辑复杂且对 agent-inject 类型的块无法有效哈希。新方案引入了两个持久化集合：Target Set（待执行节点）和 Stale Roots（过期根节点）。当节点的 prompt 被修改时，该节点自动加入 Target Set，其直接下游被标记为 Stale Root；执行完成后，节点从 Target Set 移出，并通过 BFS 从 Stale Roots 前向传播计算所有可能过期的节点。这种显式标记的方式比哈希比对更直观，也使得 `todo.ts` 可以作为纯函数实现——输入 Target Set、Stale Roots 和已有输出，输出拓扑排序后的待执行层次列表，无任何副作用。
 
 = 具体用例
 == 用例一
