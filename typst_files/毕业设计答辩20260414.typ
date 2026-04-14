@@ -9,8 +9,8 @@
     title: [FlowCabal],
     subtitle: [AI 半自动化写作辅助工具],
     author: [田照涛],
-    date: [2026],
-    institution: [大数据技术 · 曾小爽],
+    date: [2026.04.14],
+    institution: [贵州轻工职业大学],
   ),
 )
 
