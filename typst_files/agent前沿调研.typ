@@ -23,12 +23,14 @@
 )
 
 #set par(
-  leading: 0.76em,
+  leading: 0.84em,
+  spacing: 0.42em,
   justify: true,
 )
 
 #show table.cell: it => {
-  set par(justify: false)
+  set par(justify: false, leading: 0.68em)
+  set text(size: 9.2pt)
   it
 }
 
@@ -73,6 +75,35 @@
 #let risk(title, body) = panel(title, body, fill: soft-amber, stroke: rgb("#fedf89"))
 #let source(url) = text(size: 8.6pt, fill: slate)[#url]
 
+#show heading.where(level: 1): set text(size: 16pt, weight: "bold", fill: navy)
+#show heading.where(level: 2): set text(size: 12pt, weight: "semibold", fill: navy)
+
+#let section-brief(body) = block(
+  width: 100%,
+  inset: (x: 9pt, y: 6pt),
+  radius: 5pt,
+  stroke: 0.55pt + rule,
+  fill: white,
+  breakable: true,
+)[
+  #text(size: 8.4pt, weight: "bold", fill: navy)[速读]
+  #h(5pt)
+  #text(size: 9.2pt, fill: slate)[#body]
+]
+
+#let reading-band(title, body) = block(
+  width: 100%,
+  inset: 10pt,
+  radius: 7pt,
+  stroke: 0.65pt + rgb("#b9d6f2"),
+  fill: rgb("#f8fbff"),
+  breakable: true,
+)[
+  #text(size: 10.2pt, weight: "bold", fill: navy)[#title]
+  #v(4pt)
+  #body
+]
+
 #align(center)[
   #v(2.2cm)
   #text(size: 27pt, weight: "bold", fill: navy)[Native Agent Runtime]
@@ -104,6 +135,36 @@
 
 #pagebreak()
 
+= 阅读指南
+
+#keytake[怎么读这份报告][
+  这份文档分成两层：前半部分是产品和架构主线，读到“结论”就能得到完整决策依据；后半部分是补充研究和前沿追踪，用来查证来源、补强论据和观察 2026 年的新方向。
+]
+
+#table(
+  columns: (0.9fr, 2fr, 2.6fr),
+  inset: 7pt,
+  stroke: rule,
+  fill: (x, y) => if y == 0 { rgb("#e0f2fe") } else if calc.odd(y) { rgb("#f8fafc") } else { white },
+  [读者目标], [建议阅读路径], [你会得到什么],
+  [10 分钟], [`执行摘要` -> `建议的核心架构` -> `推荐路线图` -> `结论`], [快速判断项目应不应该从 skill loop 升级为 goal runtime，以及 MVP 应先做什么。],
+  [30 分钟], [再读 `背景`、OpenAI / Anthropic / LangGraph、`评测不是附属品`、`高强度自我迭代`], [理解为什么核心对象是 `Goal`，为什么事件流、权限、评测和审计要在早期进入架构。],
+  [深读], [继续读三个附录], [补齐递归 subagent、上下文管理、A2A、observability、agentic RL、CUA 和安全治理等论据。],
+)
+
+#reading-band[主线结构][
+  - #strong[定位]：项目不是 chat agent 框架，而是面向外部系统调用的 native agent runtime。
+  - #strong[机制]：从 OpenAI、Anthropic、LangGraph、MAF、CrewAI、Pydantic AI、Inspect/promptfoo 等框架中抽取可落地机制。
+  - #strong[架构]：以 `Goal Engine`、`Event Store`、`Tool Runtime`、`Policy Engine`、`Eval Engine`、`Auditor` 和 `Capability Store` 为核心。
+  - #strong[路线]：先做 goal/event/policy/eval 四个基础，再进入 subagent、capability evolution 和 dataset loop。
+]
+
+#risk[阅读时的重点取舍][
+  文档里大量厂商和论文内容不是为了“覆盖所有 agent 框架”，而是为了回答一个工程问题：这个项目下一步应该沉淀成什么运行时边界。阅读时可以优先看“对本项目的启发”和“我的判断”。
+]
+
+#pagebreak()
+
 = 执行摘要
 
 #keytake[一句话结论][
@@ -111,6 +172,19 @@
 ]
 
 本报告基于对 OpenAI、Anthropic 以及多个 agent harness / eval / observability 框架的调研，结合当前仓库已经具备的能力，给出一个更清晰的项目定位、架构方向和演进路线。
+
+#table(
+  columns: (1fr, 2.5fr, 2.5fr),
+  inset: 7pt,
+  stroke: rule,
+  fill: (x, y) => if y == 0 { rgb("#eef4ff") } else if calc.odd(y) { rgb("#f9fafb") } else { white },
+  [判断], [推荐方向], [原因],
+  [产品定位], [Native Agent Runtime], [外部系统需要可调用、可观察、可恢复的执行模块，而不是只返回文本的聊天接口。],
+  [根对象], [`Goal`], [goal 能自然承载状态、预算、权限、事件、artifact、eval 和 audit。],
+  [多 agent], [调度系统], [subagent 应有明确输入、预算、权限和输出 schema，而不是开放式群聊。],
+  [自我迭代], [eval-driven + audit-gated], [能力版本必须基于 trace、case、评测、审计和发布门禁演进。],
+  [MVP 顺序], [goal/event/policy/eval 先行], [这四个边界决定后续 subagent、capability evolution 和 dataset loop 是否可控。],
+)
 
 当前仓库已经实现了一个 `Skill Agent` MVP：它用 Go 编写，暴露 HTTP API，支持 skill 版本、eval case、command evaluator、feedback improver 和改进循环。这个基础不是要推倒重来，而是可以升级为更通用的能力进化内核：
 
@@ -142,6 +216,10 @@ Goal -> agent run -> subagents/tools -> trace -> eval -> audit -> capability rev
 你的项目可以取它们的交集，但用一个更底层、更可被外部系统调用、更不绑定单一语言 SDK 的形式落地。
 
 = 背景：为什么不是普通 Chat Agent 框架
+
+#section-brief[
+  本节回答“根对象为什么不是 chat”。结论是：外部程序调用的 agent 更像长期任务执行器，核心对象应是 `Goal`。
+]
 
 用户提出的真实需求有几个明确点：
 
@@ -182,6 +260,10 @@ POST /goals/{id}/feedback
 ]
 
 = OpenAI Agents SDK：轻量原语和编排边界
+
+#section-brief[
+  重点看 agents、tools、handoffs、guardrails 和 tracing。它们适合作为本项目的基础原语，但调度权和权限边界应留在 runtime。
+]
 
 OpenAI Agents SDK 的官方文档把它定义为用于构建 production-ready agentic applications 的工具包，核心能力包括 agents、tools、guardrails、handoffs、sessions、tracing、voice、realtime 和 MCP。它的价值不在于复杂抽象，而在于给出了一组非常干净的 agent 原语。
 
@@ -249,6 +331,10 @@ OpenAI guardrails 文档把检查点分成 input、output 和 tool guardrails，
 但我不建议把“审计模型”直接等同于 guardrail。模型审计擅长语义判断，例如 goal drift、证据不足、解释不一致、风险描述缺失；但它不擅长做硬边界。硬边界必须由 policy engine、sandbox、allowlist、budget 和 eval gate 执行。
 
 = Anthropic Managed Agents：外部调用型 Harness 的成熟形态
+
+#section-brief[
+  重点看 session、environment、events、permission policies 和 multiagent threads。它最接近“外部系统提交长期任务并持续观察”的目标形态。
+]
 
 Anthropic Managed Agents 的设计非常接近本项目想做的方向。它不是简单 chat API，而是一个 pre-built configurable agent harness，主要用于 long-running tasks 和 asynchronous work。
 
@@ -358,6 +444,10 @@ Anthropic Agent Skills 文档说明了一个非常实用的能力包装方式：
 
 = LangGraph：State Graph 和 Durable Execution
 
+#section-brief[
+  本节强调长期 agent 任务本质上是状态机。没有持久状态、中断恢复和状态转移解释，runtime 很难支撑真实自动化。
+]
+
 LangGraph 把自己定位为 low-level orchestration framework and runtime，用于 long-running、stateful agents。它强调的不是“更聪明的 agent”，而是底层运行能力：persistence、durable execution、streaming、human-in-the-loop、memory、debugging 和 deployment。
 
 它的价值在于承认 agent workflow 是状态机，而不是单次模型调用。
@@ -396,6 +486,10 @@ running
 
 = Microsoft Agent Framework：生产级、多语言和互操作
 
+#section-brief[
+  这一节用于校准本项目的工程边界：Go runtime 可以做稳定内核，OpenAPI / gRPC 和薄 SDK 负责跨语言接入。
+]
+
 Microsoft Agent Framework 是 AutoGen 的后继方向，定位为 production-grade AI agents and multi-agent workflows，支持 Python 和 .NET。它强调多语言一致 API、多 provider、middleware、graph-based workflows、checkpointing、streaming、human-in-the-loop、time-travel、OpenTelemetry、declarative agents、agent skills、A2A 和 MCP。
 
 这和本项目“native + externally callable + multiagent”的方向高度相关。尤其值得借鉴的是分层架构：
@@ -416,6 +510,10 @@ Microsoft Agent Framework 是 AutoGen 的后继方向，定位为 production-gra
 
 = CrewAI：Crew / Flow 和产品化执行
 
+#section-brief[
+  CrewAI 值得借鉴的是流程化、checkpoint/resume 和 testing/training，而不是把“crew”作为本项目的核心心智模型。
+]
+
 CrewAI 的文档中反复出现 agents、tasks、crews、flows、processes、memory、planning、checkpointing、training、testing、event listeners、kickoff / status / resume API、AMP deployment and tracing。
 
 它的风格更偏“团队和流程产品化”。其中最适合本项目吸收的是两层抽象：
@@ -435,6 +533,10 @@ CrewAI 的文档中反复出现 agents、tasks、crews、flows、processes、mem
 对于本项目，我不建议直接采用“crew”作为核心名词，因为它容易让人联想到角色扮演式多 agent。更好的核心名词仍是 `Goal`、`Run`、`Thread` 和 `Capability`。但 CrewAI 的 checkpoint/resume、testing/training、event listener 很值得吸收。
 
 = Pydantic AI：Schema-first 和强类型边界
+
+#section-brief[
+  这里的关键结论是 schema-first：工具输入、agent 输出、feedback、eval result、audit report 和 subagent output 都不能只是一段文本。
+]
 
 Pydantic AI 的价值是工程化，尤其是 agent specs、dependencies、typed output、toolsets、hooks、graph、evals、dataset management、LLM judge 和 durable execution integrations。
 
@@ -479,6 +581,10 @@ Agent runtime 的失败往往不是模型“想错了”，而是边界含糊：
 ```
 
 = Inspect AI、promptfoo 和 Evals：评测不是附属品
+
+#section-brief[
+  如果项目要支持高强度自我迭代，eval 就必须是一等系统。真实 trace、失败 case、scorer 和 regression gate 决定能力能否稳定变好。
+]
 
 OpenAI Evals、Inspect AI、promptfoo、Pydantic Evals、Braintrust 和 LangSmith 都说明同一件事：agent 能力如果要持续变好，必须把 evaluation 变成一等系统。
 
@@ -546,6 +652,10 @@ Promote  -> candidate -> stable，或者 shadow / canary
 
 = 横向对比：哪些机制值得进入本项目
 
+#section-brief[
+  这一节把前面框架压缩成一张决策表。读者可以直接看“本项目建议”列，判断哪些机制应该进入 MVP 或后续阶段。
+]
+
 #table(
   columns: (1.25fr, 1.35fr, 1.35fr, 1.35fr, 1.35fr),
   inset: 6pt,
@@ -565,6 +675,10 @@ Promote  -> candidate -> stable，或者 shadow / canary
 这个对比说明：本项目不需要复制任何一个框架，而应该把几类机制组合起来：OpenAI 的轻量 agent 原语、Anthropic 的 session/event/permission/sandbox 模型、LangGraph / MAF 的 durable workflow runtime、Inspect / promptfoo 的 eval harness、Braintrust / LangSmith 的 observability-to-evaluation 闭环。
 
 = 建议的核心架构
+
+#section-brief[
+  这里是主线报告的架构落点：十二个模块不是一次性全部实现，而是用来定义未来边界，避免早期 API 走偏。
+]
 
 我建议把系统拆成十二个模块。
 
@@ -702,6 +816,10 @@ goal.failed
 
 = 高强度自我迭代：可控闭环
 
+#section-brief[
+  自我迭代的边界是本项目最重要的产品原则：agent 可以提出 candidate revision，但发布必须经过 eval、audit、policy 和 promotion gate。
+]
+
 用户特别关心“高强度自我迭代”。这部分要非常小心，因为它既是项目亮点，也是最大风险。
 
 我建议明确规定：agent 可以提出自我改进，但不能直接把改进发布为稳定版本。
@@ -774,6 +892,10 @@ stable
 
 = 对当前仓库的演进建议
 
+#section-brief[
+  本节把调研结论落到当前 Go 仓库。核心策略是沿着已有 skill/eval/run 基础自然扩展，不做一次性大重构。
+]
+
 当前仓库已经有以下基础：Go HTTP service、file-backed store、skill revision、eval cases、inline evaluator、command evaluator、feedback improver、OpenAPI draft、多语言 thin client examples。
 
 这些能力可以自然演进，不需要一次性重构成大框架。
@@ -827,6 +949,10 @@ Evaluator -> Eval adapter
 LLM improver、audit model 和 promotion gate 可以在这一阶段加入。
 
 = 建议 API 草案
+
+#section-brief[
+  API 草案只展示关键对象形态：`Goal`、event 和 audit report。它的作用是约束架构讨论，不代表完整 OpenAPI。
+]
 
 == Create Goal
 
@@ -906,6 +1032,10 @@ POST /v1/goals
 
 = 关键产品原则
 
+#section-brief[
+  这六条原则是后续做取舍时的检查清单。只要出现“chat 优先”“模型直接越权”“没有 eval 就 promote”，都应回到这里校准。
+]
+
 == 原则一：Goal 优先于 Chat
 
 Chat 可以作为 UI，但 API 和状态模型应该围绕 `Goal`。这会让系统天然适合外部调用、异步执行和长期任务。
@@ -932,6 +1062,10 @@ Chat 可以作为 UI，但 API 和状态模型应该围绕 `Goal`。这会让系
 
 = 风险与对策
 
+#section-brief[
+  风险重点不在模型是否偶尔犯错，而在系统是否能限制越权、终止无效循环、留下证据，并阻止坏版本进入 stable。
+]
+
 #table(
   columns: (1.3fr, 2.35fr, 2.4fr),
   inset: 7pt,
@@ -948,6 +1082,10 @@ Chat 可以作为 UI，但 API 和状态模型应该围绕 `Goal`。这会让系
 )
 
 = 推荐路线图
+
+#section-brief[
+  路线图按依赖顺序排列：先把 goal/event/policy/eval 打稳，再做 subagent、capability evolution 和 observability-to-dataset 闭环。
+]
 
 == v0.1：Goal Runtime MVP
 
@@ -1014,6 +1152,10 @@ Chat 可以作为 UI，但 API 和状态模型应该围绕 `Goal`。这会让系
 
 = 当前项目的新定位文案
 
+#section-brief[
+  这一节可以直接作为 README、项目主页或 API 文档的定位文案来源。长版用于介绍，tagline 用于一句话描述。
+]
+
 英文建议：
 
 #panel[English Positioning][
@@ -1040,6 +1182,10 @@ Goal-driven runtime for auditable, self-improving agents.
 
 = 结论
 
+#section-brief[
+  主线报告到这里结束。后面的内容是附录，用来补充研究依据和前沿判断，不影响前面的产品定位与路线图结论。
+]
+
 这次调研后，我的判断是：项目方向应该从“skill 自动改进服务”升级为“agent 执行和进化控制平面”。当前仓库的 skill revision、eval、feedback 和 command evaluator 是一个很好的起点，但更大的价值在于把它们放进 `Goal Runtime` 中。
 
 不要做另一个聊天机器人框架，也不要做只有 Python 能用的 agent SDK。更有价值的路线是：
@@ -1056,7 +1202,13 @@ Goal-driven runtime for auditable, self-improving agents.
 
 如果按这个路线走，项目可以变成一个真正底层的 agent infrastructure：它不是替代 OpenAI、Anthropic、LangGraph 或 CrewAI，而是吸收它们最成熟的机制，做一个更 native、更跨语言、更强调外部调用和自我进化控制的运行时。
 
-= 补充研究：递归 LLM、Subagent 与超长上下文
+#pagebreak()
+
+= 附录 A：递归 LLM、Subagent 与超长上下文
+
+#section-brief[
+  本附录回答“subagent 和递归调用能否突破单窗口限制”。重点结论是：递归可以是策略，但上下文切片、证据指针、预算和并发应由 runtime 管理。
+]
 
 你提到的“递归 LLM”方向，现在可以比较明确地落在 `Recursive Language Models` 这条线上。Alex L. Zhang、Tim Kraska 和 Omar Khattab 的 RLM 论文把超长 prompt 当成外部环境，让模型通过程序化检查、分解和递归自调用来处理片段。它的核心不是“把更多 token 塞进一个窗口”，而是把上下文访问变成可调度的递归过程。
 
@@ -1267,7 +1419,11 @@ subagent.joined
 #pagebreak()
 #set par(justify: true)
 
-= 尾部补充：Agent Runtime 的最新前沿与我的品评
+= 附录 B：Agent Runtime 的最新前沿与我的品评
+
+#section-brief[
+  本附录扩展协议、observability、环境治理、记忆、A2A、UI 协议和数据治理等前沿。它用于补充长期方向，不是 MVP 必须一次做完的范围。
+]
 
 前面的报告已经把项目定位到 `Goal`、`Thread`、`SubagentRun`、`ContextCapsule`、`AuditGate` 和 `EventLog`。再往前看，2025-2026 年 agent runtime 的竞争点正在从“谁的 prompt 更会调度”转向“谁能把 agent 变成可互操作、可观测、可授权、可恢复的系统组件”。这不是一个单点 SDK 问题，而是一个控制平面问题。
 
@@ -1502,7 +1658,11 @@ production trace
 #pagebreak()
 #set par(justify: true)
 
-= 2026 追加：MCP 之后的 Agent Runtime 前沿
+= 附录 C：MCP 之后的 Agent Runtime 前沿
+
+#section-brief[
+  本附录记录 2026 年更靠后的信号：agentic RL、agent-aware serving、SDB、computer use、持续学习和轨迹级安全。它主要服务中长期路线判断。
+]
 
 如果把视角切到 2026 年，MCP 已经不算前沿了。它更像 agent 时代的基础连接层：有用，但不再决定胜负。真正往前走的方向，是把 agent runtime 当成一个可训练、可调度、可审计、可恢复、可经济优化的系统内核。前沿问题已经从“怎么把工具接进来”变成了：
 
