@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 import subprocess
 from dataclasses import dataclass
@@ -11,8 +12,27 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parent
 OBJECT_DIR = ROOT / "object"
 ASSETS_DIR = ROOT / "assets"
+GALLERY_ITEMS_DIR = ROOT / "gallery" / "items"
 SITE_TITLE = "zhecai's blog"
 PUBLIC_DIR_RE = re.compile(r"^\[(\d{3})\](.+)$")
+IMAGE_EXTENSIONS = {
+    ".apng",
+    ".avif",
+    ".bmp",
+    ".gif",
+    ".heic",
+    ".heif",
+    ".ico",
+    ".jfif",
+    ".jpeg",
+    ".jpg",
+    ".jxl",
+    ".png",
+    ".svg",
+    ".tif",
+    ".tiff",
+    ".webp",
+}
 
 DEFAULT_TYPST_FONT = """#set text(font: ("Sarasa Fixed Slab SC"), lang:("zh"))
 #show math.equation: set text(font: "Neo Euler")
@@ -59,6 +79,17 @@ class Category:
         return sorted({entry.extension for entry in self.entries}, key=natural_sort_key)
 
 
+@dataclass
+class GalleryItem:
+    id: str
+    title: str
+    date: str
+    image: str
+    alt: str
+    source: str
+    body: str
+
+
 def natural_sort_key(value: object) -> list[object]:
     """Return a stable natural sort key for mixed Chinese/ASCII filenames."""
 
@@ -74,6 +105,11 @@ def h(value: object) -> str:
 
 def quote_url_path(*parts: str) -> str:
     return "/".join(quote(part, safe="-_.~()") for part in parts)
+
+
+def root_href(path: Path) -> str:
+    rel_path = path.relative_to(ROOT) if path.is_absolute() else path
+    return f"./{quote_url_path(*rel_path.parts)}"
 
 
 def date_value(value: str | None) -> str:
@@ -180,6 +216,89 @@ def read_typst_font() -> str:
     return text or DEFAULT_TYPST_FONT
 
 
+def first_markdown_heading(body: str) -> str | None:
+    for line in body.splitlines():
+        match = re.match(r"^#\s+(.+)$", line.strip())
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def gallery_folder_files(path: Path) -> tuple[Path | None, Path | None]:
+    markdown_files = sorted(
+        (
+            item
+            for item in path.iterdir()
+            if item.is_file() and item.suffix.lower() == ".md" and not item.name.startswith((".", "_"))
+        ),
+        key=lambda item: natural_sort_key(item.name),
+    )
+    image_files = sorted(
+        (
+            item
+            for item in path.iterdir()
+            if item.is_file() and item.suffix.lower() in IMAGE_EXTENSIONS and not item.name.startswith(".")
+        ),
+        key=lambda item: natural_sort_key(item.name),
+    )
+    return (markdown_files[0] if markdown_files else None, image_files[0] if image_files else None)
+
+
+def gallery_item_date(markdown_path: Path, image_path: Path) -> str:
+    dates: list[str] = []
+    for path in (markdown_path, image_path):
+        _, updated = git_dates(path)
+        if updated:
+            dates.append(updated)
+    return max(dates) if dates else ""
+
+
+def collect_gallery_items() -> list[GalleryItem]:
+    if not GALLERY_ITEMS_DIR.exists():
+        return []
+
+    items: list[GalleryItem] = []
+    for path in sorted(GALLERY_ITEMS_DIR.iterdir(), key=lambda candidate: natural_sort_key(candidate.name)):
+        if not path.is_dir() or path.name.startswith((".", "_")):
+            continue
+
+        markdown_path, image_path = gallery_folder_files(path)
+        if not markdown_path or not image_path:
+            continue
+
+        body = markdown_path.read_text(encoding="utf-8").strip()
+        title = first_markdown_heading(body) or path.name
+        items.append(
+            GalleryItem(
+                id=path.name,
+                title=title,
+                date=gallery_item_date(markdown_path, image_path),
+                image=root_href(image_path),
+                alt=title,
+                source=root_href(markdown_path),
+                body=body,
+            )
+        )
+
+    return items
+
+
+def gallery_json(items: list[GalleryItem]) -> str:
+    data = [
+        {
+            "id": item.id,
+            "title": item.title,
+            "date": item.date,
+            "image": item.image,
+            "alt": item.alt,
+            "source": item.source,
+            "body": item.body,
+        }
+        for item in items
+    ]
+    return json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+
+
 def page_head(title: str, asset_prefix: str) -> str:
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -205,6 +324,7 @@ def site_header(categories: list[Category], current: Category | None, asset_pref
             nav_links.append(
                 f'<a href="{asset_prefix}object/{quote_url_path(category.output_name)}">{h(category.title)}</a>'
             )
+    nav_links.append(f'<a href="{asset_prefix}gallery.html">画廊</a>')
 
     return f"""<body>
   <a class="skip-link" href="#content">跳到正文</a>
@@ -449,6 +569,107 @@ def render_archive_page(category: Category, categories: list[Category]) -> str:
     )
 
 
+def render_gallery_page(items: list[GalleryItem]) -> str:
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gallery - {h(SITE_TITLE)}</title>
+  <link rel="stylesheet" href="./assets/site.css">
+  <link rel="stylesheet" href="./assets/gallery.css">
+  <script type="application/json" id="gallery-data">{gallery_json(items)}</script>
+  <script defer src="./assets/gallery.js"></script>
+</head>
+<body class="gallery-terminal">
+  <a class="skip-link" href="#content">跳到正文</a>
+
+  <header class="gallery-topbar" aria-label="画廊导航">
+    <a class="gallery-logo" href="./index.html">ZHECAI <em>GALLERY</em></a>
+    <nav class="gallery-nav" aria-label="站点">
+      <a href="./index.html">ARCHIVE</a>
+      <a href="./gallery.html" aria-current="page">GALLERY</a>
+    </nav>
+    <div class="gallery-status" aria-label="系统状态">
+      <span class="live-dot" aria-hidden="true"></span>
+      <span>LOCAL DISPLAY</span>
+    </div>
+  </header>
+
+  <main id="content" class="gallery-shell" data-gallery>
+    <section class="gallery-alert" aria-label="画廊状态">
+      <span class="gallery-alert-badge">CRT</span>
+      <span class="gallery-alert-text">VISUAL ARCHIVE / STATIC DISPLAY</span>
+      <span class="gallery-clock" data-gallery-clock>--:--:--</span>
+    </section>
+
+    <section class="gallery-hero crt-monitor" aria-labelledby="gallery-title">
+      <div class="gallery-hero-copy terminal-text">
+        <p class="gallery-kicker">BOOT: VISUAL ARCHIVE</p>
+        <h1 id="gallery-title">画廊</h1>
+        <p>VISUAL ARCHIVE</p>
+      </div>
+      <dl class="gallery-meter" aria-label="画廊统计">
+        <div>
+          <dt>ITEMS</dt>
+          <dd data-gallery-count>{len(items)}</dd>
+        </div>
+        <div>
+          <dt>MODE</dt>
+          <dd>IMAGE + MD</dd>
+        </div>
+        <div>
+          <dt>STATUS</dt>
+          <dd>READY</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="gallery-control-panel" aria-label="画廊控制">
+      <div class="gallery-filter-group" role="group" aria-label="条目筛选">
+        <button type="button" class="gallery-button is-active" data-gallery-filter="all" aria-pressed="true">ALL</button>
+      </div>
+      <p class="gallery-hint"><span class="status-led"></span><span data-gallery-current>READY</span></p>
+    </section>
+
+    <section class="gallery-workbench">
+      <aside class="gallery-list-panel" aria-labelledby="gallery-list-title">
+        <div class="panel-heading">
+          <h2 id="gallery-list-title">INDEX</h2>
+          <span data-gallery-visible-count>{len(items)} ITEMS</span>
+        </div>
+        <div class="gallery-list" data-gallery-list></div>
+      </aside>
+
+      <article class="gallery-display crt-monitor" aria-live="polite">
+        <div class="image-console">
+          <div class="console-title">
+            <span data-gallery-image-title>IMAGE FEED</span>
+            <span class="console-tag" data-gallery-kind>--</span>
+          </div>
+          <figure class="gallery-figure">
+            <img data-gallery-image alt="" src="">
+            <figcaption data-gallery-caption hidden></figcaption>
+          </figure>
+        </div>
+
+        <div class="doc-console">
+          <div class="console-title">
+            <span data-gallery-doc-title>MARKDOWN RENDER</span>
+            <a data-gallery-md-link href="#" target="_blank" rel="noopener">OPEN .MD</a>
+          </div>
+          <div class="markdown-body" data-gallery-doc>
+            <p class="loading-line">READY<span class="blinking-cursor" aria-hidden="true"></span></p>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+
 def clean_stale_pages(categories: list[Category]) -> None:
     OBJECT_DIR.mkdir(exist_ok=True)
     valid = {category.output_name for category in categories}
@@ -463,6 +684,7 @@ def write_site(categories: list[Category]) -> None:
     clean_stale_pages(categories)
 
     (ROOT / "index.html").write_text(render_home(categories), encoding="utf-8")
+    (ROOT / "gallery.html").write_text(render_gallery_page(collect_gallery_items()), encoding="utf-8")
     for category in categories:
         (OBJECT_DIR / category.output_name).write_text(
             render_archive_page(category, categories),
