@@ -416,7 +416,7 @@ def render_home(categories: list[Category]) -> str:
       <div class="hero-grid">
         <div>
           <h1>{h(SITE_TITLE)}</h1>
-          <p class="lead">个人博客，分享学习笔记、技术报告、读书记录和一些题材松散的文章。所有内容仅代表个人观点。</p>
+          <p class="lead">我终于不再梦到那宏大的寂静、收缩或撕裂。</p>
         </div>
         <dl class="stat-grid" aria-label="站点统计">
           <div>
