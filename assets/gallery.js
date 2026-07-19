@@ -17,6 +17,7 @@
     count: root.querySelector("[data-gallery-count]"),
     visibleCount: root.querySelector("[data-gallery-visible-count]"),
     current: root.querySelector("[data-gallery-current]"),
+    position: root.querySelector("[data-gallery-position]"),
     image: root.querySelector("[data-gallery-image]"),
     imageTitle: root.querySelector("[data-gallery-image-title]"),
     caption: root.querySelector("[data-gallery-caption]"),
@@ -186,6 +187,17 @@
     });
   }
 
+  function updatePosition() {
+    if (!els.position) {
+      return;
+    }
+    var items = visibleItems();
+    var index = items.findIndex(function (item) {
+      return item.id === state.activeId;
+    });
+    els.position.textContent = (index >= 0 ? index + 1 : 0) + "/" + items.length;
+  }
+
   function renderList() {
     var items = visibleItems();
 
@@ -214,6 +226,8 @@
     if (!items.length) {
       els.list.innerHTML = '<p class="gallery-card-button">NO ITEMS</p>';
     }
+
+    updatePosition();
   }
 
   function updateFilterButtons() {
@@ -235,6 +249,11 @@
     state.activeId = item.id;
     renderList();
 
+    var activeButton = els.list.querySelector(".is-active");
+    if (activeButton) {
+      activeButton.scrollIntoView({ block: "nearest" });
+    }
+
     els.image.hidden = !item.image;
     els.image.src = item.image || "";
     els.image.alt = item.alt || item.title;
@@ -242,7 +261,11 @@
     els.caption.textContent = "";
     els.caption.hidden = true;
     els.kind.textContent = kindLabel();
-    els.docTitle.textContent = item.source ? "MARKDOWN: " + item.source.split("/").pop() : "MARKDOWN";
+    var docName = item.source ? item.source.split("/").pop() : "";
+    try {
+      docName = decodeURIComponent(docName);
+    } catch (_) {}
+    els.docTitle.textContent = docName ? "markdown: " + docName : "markdown";
     els.mdLink.href = item.source || "#";
     els.current.textContent = item.title;
 
@@ -277,6 +300,56 @@
     button.addEventListener("click", function () {
       setFilter(button.dataset.galleryFilter || "all");
     });
+  });
+
+  function moveSelection(nextIndex, items) {
+    if (!items.length) {
+      return;
+    }
+    var clamped = Math.max(0, Math.min(nextIndex, items.length - 1));
+    selectItem(items[clamped].id);
+    var button = els.list.querySelector(".is-active");
+    if (button) {
+      button.focus({ preventScroll: true });
+    }
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
+    var target = event.target;
+    if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || "")) {
+      return;
+    }
+
+    var items = visibleItems();
+    if (!items.length) {
+      return;
+    }
+    var index = items.findIndex(function (item) {
+      return item.id === state.activeId;
+    });
+
+    if (event.key === "j" || event.key === "ArrowDown") {
+      moveSelection(index < 0 ? 0 : index + 1, items);
+      event.preventDefault();
+    } else if (event.key === "k" || event.key === "ArrowUp") {
+      moveSelection(index < 0 ? 0 : index - 1, items);
+      event.preventDefault();
+    } else if (event.key === "g") {
+      moveSelection(0, items);
+      event.preventDefault();
+    } else if (event.key === "G") {
+      moveSelection(items.length - 1, items);
+      event.preventDefault();
+    } else if (event.key === "Enter") {
+      var href = els.mdLink ? els.mdLink.getAttribute("href") : "";
+      if (href && href !== "#") {
+        window.open(href, "_blank", "noopener");
+        event.preventDefault();
+      }
+    }
   });
 
   updateClock();

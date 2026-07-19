@@ -329,10 +329,16 @@ def site_header(categories: list[Category], current: Category | None, asset_pref
     return f"""<body>
   <a class="skip-link" href="#content">跳到正文</a>
   <header class="site-header">
-    <a class="brand" href="{home_link}">{h(SITE_TITLE)}</a>
-    <nav class="site-nav" aria-label="分类">
-      {"".join(nav_links)}
-    </nav>
+    <div class="masthead-meta" aria-hidden="true">
+      <span>Personal Scientific Archive</span>
+      <span>Notes · Essays · Reports</span>
+    </div>
+    <div class="masthead-main">
+      <a class="brand" href="{home_link}">{h(SITE_TITLE)}</a>
+      <nav class="site-nav" aria-label="分类">
+        {"".join(nav_links)}
+      </nav>
+    </div>
   </header>
 """
 
@@ -340,6 +346,7 @@ def site_header(categories: list[Category], current: Category | None, asset_pref
 def site_footer() -> str:
     return f"""  <footer class="site-footer">
     <p>{h(SITE_TITLE)}</p>
+    <p class="colophon">Generated statically · Hosted on GitHub Pages</p>
   </footer>
 </body>
 </html>
@@ -412,37 +419,33 @@ def render_home(categories: list[Category]) -> str:
         + site_header(categories, None, "./")
         + f"""  <main id="content">
     <section class="home-hero">
-      <p class="eyebrow">Personal Magazine / Static Archive</p>
-      <div class="hero-grid">
+      <p class="eyebrow"><span>Personal Archive</span><span class="eyebrow-rule" aria-hidden="true"></span><span class="eyebrow-dim">Science · Notes · Essays</span></p>
+      <h1>{h(SITE_TITLE)}</h1>
+      <p class="lead">我终于不再梦到那宏大的寂静、收缩或撕裂。</p>
+      <dl class="stat-grid" aria-label="站点统计">
         <div>
-          <h1>{h(SITE_TITLE)}</h1>
-          <p class="lead">我终于不再梦到那宏大的寂静、收缩或撕裂。</p>
+          <dt>分类</dt>
+          <dd>{len(categories)}</dd>
         </div>
-        <dl class="stat-grid" aria-label="站点统计">
-          <div>
-            <dt>分类</dt>
-            <dd>{len(categories)}</dd>
-          </div>
-          <div>
-            <dt>内容</dt>
-            <dd>{len(entries)}</dd>
-          </div>
-          <div>
-            <dt>最近更新</dt>
-            <dd>{time_html(latest_update)}</dd>
-          </div>
-          <div>
-            <dt>类型</dt>
-            <dd>{type_summary or "未记录"}</dd>
-          </div>
-        </dl>
-      </div>
+        <div>
+          <dt>内容</dt>
+          <dd>{len(entries)}</dd>
+        </div>
+        <div>
+          <dt>最近更新</dt>
+          <dd>{time_html(latest_update)}</dd>
+        </div>
+        <div>
+          <dt>类型</dt>
+          <dd>{type_summary or "未记录"}</dd>
+        </div>
+      </dl>
     </section>
 
     <section class="section-block" aria-labelledby="latest-title">
       <div class="section-heading">
-        <p class="eyebrow">Recently Updated</p>
-        <h2 id="latest-title">最近更新</h2>
+        <h2 id="latest-title"><span class="section-index">01</span>最近更新</h2>
+        <p class="section-note">Recently Updated</p>
       </div>
       <ol class="entry-list latest-list">
         {latest_lines}
@@ -451,8 +454,8 @@ def render_home(categories: list[Category]) -> str:
 
     <section class="section-block" aria-labelledby="categories-title">
       <div class="section-heading">
-        <p class="eyebrow">Archives</p>
-        <h2 id="categories-title">分类归档</h2>
+        <h2 id="categories-title"><span class="section-index">02</span>分类归档</h2>
+        <p class="section-note">Archives</p>
       </div>
       <div class="category-grid">
         {category_grid}
@@ -530,7 +533,7 @@ def render_archive_page(category: Category, categories: list[Category]) -> str:
         + site_header(categories, category, "../")
         + f"""  <main id="content">
     <section class="archive-hero">
-      <p class="eyebrow">Archive / {h(category.dir_name[:5])}</p>
+      <p class="eyebrow"><span>Archive</span><span class="eyebrow-rule" aria-hidden="true"></span><span class="eyebrow-dim">{h(category.dir_name[:5])}</span></p>
       <h1>{h(category.title)}</h1>
       <dl class="stat-grid compact" aria-label="分类统计">
         <div>
@@ -581,89 +584,94 @@ def render_gallery_page(items: list[GalleryItem]) -> str:
   <script type="application/json" id="gallery-data">{gallery_json(items)}</script>
   <script defer src="./assets/gallery.js"></script>
 </head>
-<body class="gallery-terminal">
+<body class="tui-body">
   <a class="skip-link" href="#content">跳到正文</a>
 
-  <header class="gallery-topbar" aria-label="画廊导航">
-    <a class="gallery-logo" href="./index.html">ZHECAI <em>GALLERY</em></a>
-    <nav class="gallery-nav" aria-label="站点">
-      <a href="./index.html">ARCHIVE</a>
-      <a href="./gallery.html" aria-current="page">GALLERY</a>
-    </nav>
-    <div class="gallery-status" aria-label="系统状态">
-      <span class="live-dot" aria-hidden="true"></span>
-      <span>LOCAL DISPLAY</span>
+  <header class="tui-topbar">
+    <div class="tui-topbar-left">
+      <a class="tui-logo" href="./index.html">[zhecai]</a>
+      <nav class="tui-nav" aria-label="站点">
+        <a href="./index.html">archive</a>
+        <a href="./gallery.html" aria-current="page">gallery</a>
+      </nav>
+    </div>
+    <div class="tui-topbar-right">
+      <span class="tui-status-text">local · static</span>
+      <span class="tui-clock" data-gallery-clock>--:--:--</span>
     </div>
   </header>
 
-  <main id="content" class="gallery-shell" data-gallery>
-    <section class="gallery-alert" aria-label="画廊状态">
-      <span class="gallery-alert-badge">CRT</span>
-      <span class="gallery-alert-text">VISUAL ARCHIVE / STATIC DISPLAY</span>
-      <span class="gallery-clock" data-gallery-clock>--:--:--</span>
-    </section>
-
-    <section class="gallery-hero crt-monitor" aria-labelledby="gallery-title">
-      <div class="gallery-hero-copy terminal-text">
-        <p class="gallery-kicker">BOOT: VISUAL ARCHIVE</p>
+  <main id="content" class="tui-shell" data-gallery>
+    <section class="tui-panel" aria-labelledby="gallery-title">
+      <header class="tui-panel-title">
+        <span>gallery — visual archive</span>
+        <span class="tui-tag" data-gallery-count>{len(items)}</span>
+      </header>
+      <div class="tui-panel-body tui-hero">
+        <p class="tui-line"><span class="tui-prompt">$</span> ls ./gallery/items</p>
         <h1 id="gallery-title">画廊</h1>
-        <p>VISUAL ARCHIVE</p>
+        <dl class="tui-meter" aria-label="画廊统计">
+          <div>
+            <dt>items</dt>
+            <dd>{len(items)}</dd>
+          </div>
+          <div>
+            <dt>mode</dt>
+            <dd>image + md</dd>
+          </div>
+          <div>
+            <dt>status</dt>
+            <dd>ready</dd>
+          </div>
+        </dl>
       </div>
-      <dl class="gallery-meter" aria-label="画廊统计">
-        <div>
-          <dt>ITEMS</dt>
-          <dd data-gallery-count>{len(items)}</dd>
-        </div>
-        <div>
-          <dt>MODE</dt>
-          <dd>IMAGE + MD</dd>
-        </div>
-        <div>
-          <dt>STATUS</dt>
-          <dd>READY</dd>
-        </div>
-      </dl>
     </section>
 
-    <section class="gallery-control-panel" aria-label="画廊控制">
-      <div class="gallery-filter-group" role="group" aria-label="条目筛选">
-        <button type="button" class="gallery-button is-active" data-gallery-filter="all" aria-pressed="true">ALL</button>
+    <div class="tui-toolbar">
+      <div class="tui-filter-group" role="group" aria-label="条目筛选">
+        <button type="button" class="tui-button is-active" data-gallery-filter="all" aria-pressed="true">all</button>
       </div>
-      <p class="gallery-hint"><span class="status-led"></span><span data-gallery-current>READY</span></p>
-    </section>
+      <p class="tui-hint">j/k 或 ↑/↓ 移动 · enter 打开原文</p>
+    </div>
 
-    <section class="gallery-workbench">
-      <aside class="gallery-list-panel" aria-labelledby="gallery-list-title">
-        <div class="panel-heading">
-          <h2 id="gallery-list-title">INDEX</h2>
-          <span data-gallery-visible-count>{len(items)} ITEMS</span>
-        </div>
-        <div class="gallery-list" data-gallery-list></div>
+    <section class="tui-workbench">
+      <aside class="tui-panel tui-list-panel" aria-labelledby="gallery-list-title">
+        <header class="tui-panel-title">
+          <span id="gallery-list-title">index</span>
+          <span data-gallery-visible-count>{len(items)} items</span>
+        </header>
+        <div class="tui-list" data-gallery-list></div>
       </aside>
 
-      <article class="gallery-display crt-monitor" aria-live="polite">
-        <div class="image-console">
-          <div class="console-title">
-            <span data-gallery-image-title>IMAGE FEED</span>
-            <span class="console-tag" data-gallery-kind>--</span>
-          </div>
-          <figure class="gallery-figure">
+      <article class="tui-panel tui-display" aria-live="polite">
+        <div class="tui-image-pane">
+          <header class="tui-panel-title">
+            <span data-gallery-image-title>image</span>
+            <span class="tui-tag" data-gallery-kind>--</span>
+          </header>
+          <figure class="tui-figure">
             <img data-gallery-image alt="" src="">
             <figcaption data-gallery-caption hidden></figcaption>
           </figure>
         </div>
 
-        <div class="doc-console">
-          <div class="console-title">
-            <span data-gallery-doc-title>MARKDOWN RENDER</span>
-            <a data-gallery-md-link href="#" target="_blank" rel="noopener">OPEN .MD</a>
-          </div>
+        <div class="tui-doc-pane">
+          <header class="tui-panel-title">
+            <span data-gallery-doc-title>markdown</span>
+            <a data-gallery-md-link href="#" target="_blank" rel="noopener">open .md ↗</a>
+          </header>
           <div class="markdown-body" data-gallery-doc>
-            <p class="loading-line">READY<span class="blinking-cursor" aria-hidden="true"></span></p>
+            <p class="loading-line">ready<span class="blinking-cursor" aria-hidden="true"></span></p>
           </div>
         </div>
       </article>
     </section>
+
+    <footer class="tui-statusbar">
+      <span data-gallery-position>-/-</span>
+      <span class="tui-statusbar-current" data-gallery-current>ready</span>
+      <span class="tui-keys">j/k move · enter open · g/G first/last</span>
+    </footer>
   </main>
 </body>
 </html>

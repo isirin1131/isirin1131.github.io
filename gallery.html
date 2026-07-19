@@ -9,89 +9,94 @@
   <script type="application/json" id="gallery-data">[{"id": "习作20260610", "title": "习作20260610", "date": "2026-06-11", "image": "./gallery/items/%E4%B9%A0%E4%BD%9C20260610/%E6%89%AB%E6%8F%8F%E4%BB%B6_20260610_001.jpg", "alt": "习作20260610", "source": "./gallery/items/%E4%B9%A0%E4%BD%9C20260610/%E6%84%9F%E6%83%B3.md", "body": "临摹很难，在于其机械性。\n\n相对原始的画画是一门很生物性的技能，透视等技法也只是一种约束，且这种约束比临摹的约束弱的多。"}, {"id": "习作20260615", "title": "习作20260615", "date": "2026-06-15", "image": "./gallery/items/%E4%B9%A0%E4%BD%9C20260615/099.jpg", "alt": "习作20260615", "source": "./gallery/items/%E4%B9%A0%E4%BD%9C20260615/%E6%84%9F%E6%83%B3.md", "body": "伸展的蝙蝠翼手，骨头会撑起来。\n\n在 2D 上临摹完全是死路子，脑子里必须有 3D 思维。就像这个仓鼠脖子上的系带。"}]</script>
   <script defer src="./assets/gallery.js"></script>
 </head>
-<body class="gallery-terminal">
+<body class="tui-body">
   <a class="skip-link" href="#content">跳到正文</a>
 
-  <header class="gallery-topbar" aria-label="画廊导航">
-    <a class="gallery-logo" href="./index.html">ZHECAI <em>GALLERY</em></a>
-    <nav class="gallery-nav" aria-label="站点">
-      <a href="./index.html">ARCHIVE</a>
-      <a href="./gallery.html" aria-current="page">GALLERY</a>
-    </nav>
-    <div class="gallery-status" aria-label="系统状态">
-      <span class="live-dot" aria-hidden="true"></span>
-      <span>LOCAL DISPLAY</span>
+  <header class="tui-topbar">
+    <div class="tui-topbar-left">
+      <a class="tui-logo" href="./index.html">[zhecai]</a>
+      <nav class="tui-nav" aria-label="站点">
+        <a href="./index.html">archive</a>
+        <a href="./gallery.html" aria-current="page">gallery</a>
+      </nav>
+    </div>
+    <div class="tui-topbar-right">
+      <span class="tui-status-text">local · static</span>
+      <span class="tui-clock" data-gallery-clock>--:--:--</span>
     </div>
   </header>
 
-  <main id="content" class="gallery-shell" data-gallery>
-    <section class="gallery-alert" aria-label="画廊状态">
-      <span class="gallery-alert-badge">CRT</span>
-      <span class="gallery-alert-text">VISUAL ARCHIVE / STATIC DISPLAY</span>
-      <span class="gallery-clock" data-gallery-clock>--:--:--</span>
-    </section>
-
-    <section class="gallery-hero crt-monitor" aria-labelledby="gallery-title">
-      <div class="gallery-hero-copy terminal-text">
-        <p class="gallery-kicker">BOOT: VISUAL ARCHIVE</p>
+  <main id="content" class="tui-shell" data-gallery>
+    <section class="tui-panel" aria-labelledby="gallery-title">
+      <header class="tui-panel-title">
+        <span>gallery — visual archive</span>
+        <span class="tui-tag" data-gallery-count>2</span>
+      </header>
+      <div class="tui-panel-body tui-hero">
+        <p class="tui-line"><span class="tui-prompt">$</span> ls ./gallery/items</p>
         <h1 id="gallery-title">画廊</h1>
-        <p>VISUAL ARCHIVE</p>
+        <dl class="tui-meter" aria-label="画廊统计">
+          <div>
+            <dt>items</dt>
+            <dd>2</dd>
+          </div>
+          <div>
+            <dt>mode</dt>
+            <dd>image + md</dd>
+          </div>
+          <div>
+            <dt>status</dt>
+            <dd>ready</dd>
+          </div>
+        </dl>
       </div>
-      <dl class="gallery-meter" aria-label="画廊统计">
-        <div>
-          <dt>ITEMS</dt>
-          <dd data-gallery-count>2</dd>
-        </div>
-        <div>
-          <dt>MODE</dt>
-          <dd>IMAGE + MD</dd>
-        </div>
-        <div>
-          <dt>STATUS</dt>
-          <dd>READY</dd>
-        </div>
-      </dl>
     </section>
 
-    <section class="gallery-control-panel" aria-label="画廊控制">
-      <div class="gallery-filter-group" role="group" aria-label="条目筛选">
-        <button type="button" class="gallery-button is-active" data-gallery-filter="all" aria-pressed="true">ALL</button>
+    <div class="tui-toolbar">
+      <div class="tui-filter-group" role="group" aria-label="条目筛选">
+        <button type="button" class="tui-button is-active" data-gallery-filter="all" aria-pressed="true">all</button>
       </div>
-      <p class="gallery-hint"><span class="status-led"></span><span data-gallery-current>READY</span></p>
-    </section>
+      <p class="tui-hint">j/k 或 ↑/↓ 移动 · enter 打开原文</p>
+    </div>
 
-    <section class="gallery-workbench">
-      <aside class="gallery-list-panel" aria-labelledby="gallery-list-title">
-        <div class="panel-heading">
-          <h2 id="gallery-list-title">INDEX</h2>
-          <span data-gallery-visible-count>2 ITEMS</span>
-        </div>
-        <div class="gallery-list" data-gallery-list></div>
+    <section class="tui-workbench">
+      <aside class="tui-panel tui-list-panel" aria-labelledby="gallery-list-title">
+        <header class="tui-panel-title">
+          <span id="gallery-list-title">index</span>
+          <span data-gallery-visible-count>2 items</span>
+        </header>
+        <div class="tui-list" data-gallery-list></div>
       </aside>
 
-      <article class="gallery-display crt-monitor" aria-live="polite">
-        <div class="image-console">
-          <div class="console-title">
-            <span data-gallery-image-title>IMAGE FEED</span>
-            <span class="console-tag" data-gallery-kind>--</span>
-          </div>
-          <figure class="gallery-figure">
+      <article class="tui-panel tui-display" aria-live="polite">
+        <div class="tui-image-pane">
+          <header class="tui-panel-title">
+            <span data-gallery-image-title>image</span>
+            <span class="tui-tag" data-gallery-kind>--</span>
+          </header>
+          <figure class="tui-figure">
             <img data-gallery-image alt="" src="">
             <figcaption data-gallery-caption hidden></figcaption>
           </figure>
         </div>
 
-        <div class="doc-console">
-          <div class="console-title">
-            <span data-gallery-doc-title>MARKDOWN RENDER</span>
-            <a data-gallery-md-link href="#" target="_blank" rel="noopener">OPEN .MD</a>
-          </div>
+        <div class="tui-doc-pane">
+          <header class="tui-panel-title">
+            <span data-gallery-doc-title>markdown</span>
+            <a data-gallery-md-link href="#" target="_blank" rel="noopener">open .md ↗</a>
+          </header>
           <div class="markdown-body" data-gallery-doc>
-            <p class="loading-line">READY<span class="blinking-cursor" aria-hidden="true"></span></p>
+            <p class="loading-line">ready<span class="blinking-cursor" aria-hidden="true"></span></p>
           </div>
         </div>
       </article>
     </section>
+
+    <footer class="tui-statusbar">
+      <span data-gallery-position>-/-</span>
+      <span class="tui-statusbar-current" data-gallery-current>ready</span>
+      <span class="tui-keys">j/k move · enter open · g/G first/last</span>
+    </footer>
   </main>
 </body>
 </html>

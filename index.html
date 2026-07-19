@@ -10,44 +10,46 @@
 <body>
   <a class="skip-link" href="#content">跳到正文</a>
   <header class="site-header">
-    <a class="brand" href="./index.html">zhecai&#x27;s blog</a>
-    <nav class="site-nav" aria-label="分类">
-      <a href="./object/%5B001%5D%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A.html">技术报告</a><a href="./object/%5B002%5D%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0.html">读书笔记</a><a href="./object/%5B004%5D%E6%AD%A3%E7%BB%8F%E5%AD%A6%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0.html">正经学线性代数</a><a href="./object/%5B006%5D%E4%BA%8C%E6%89%8B%E5%BD%B1%E8%AF%84.html">二手影评</a><a href="./object/%5B007%5Dgames101.html">games101</a><a href="./object/%5B012%5D%E6%9D%82%E7%89%A9%E5%BD%92%E6%A1%A3.html">杂物归档</a><a href="./object/%5B013%5D%E8%B0%83%E7%A0%94%E6%8A%A5%E5%91%8A.html">调研报告</a><a href="./gallery.html">画廊</a>
-    </nav>
+    <div class="masthead-meta" aria-hidden="true">
+      <span>Personal Scientific Archive</span>
+      <span>Notes · Essays · Reports</span>
+    </div>
+    <div class="masthead-main">
+      <a class="brand" href="./index.html">zhecai&#x27;s blog</a>
+      <nav class="site-nav" aria-label="分类">
+        <a href="./object/%5B001%5D%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A.html">技术报告</a><a href="./object/%5B002%5D%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0.html">读书笔记</a><a href="./object/%5B004%5D%E6%AD%A3%E7%BB%8F%E5%AD%A6%E7%BA%BF%E6%80%A7%E4%BB%A3%E6%95%B0.html">正经学线性代数</a><a href="./object/%5B006%5D%E4%BA%8C%E6%89%8B%E5%BD%B1%E8%AF%84.html">二手影评</a><a href="./object/%5B007%5Dgames101.html">games101</a><a href="./object/%5B012%5D%E6%9D%82%E7%89%A9%E5%BD%92%E6%A1%A3.html">杂物归档</a><a href="./object/%5B013%5D%E8%B0%83%E7%A0%94%E6%8A%A5%E5%91%8A.html">调研报告</a><a href="./gallery.html">画廊</a>
+      </nav>
+    </div>
   </header>
   <main id="content">
     <section class="home-hero">
-      <p class="eyebrow">Personal Magazine / Static Archive</p>
-      <div class="hero-grid">
+      <p class="eyebrow"><span>Personal Archive</span><span class="eyebrow-rule" aria-hidden="true"></span><span class="eyebrow-dim">Science · Notes · Essays</span></p>
+      <h1>zhecai&#x27;s blog</h1>
+      <p class="lead">我终于不再梦到那宏大的寂静、收缩或撕裂。</p>
+      <dl class="stat-grid" aria-label="站点统计">
         <div>
-          <h1>zhecai&#x27;s blog</h1>
-          <p class="lead">我终于不再梦到那宏大的寂静、收缩或撕裂。</p>
+          <dt>分类</dt>
+          <dd>7</dd>
         </div>
-        <dl class="stat-grid" aria-label="站点统计">
-          <div>
-            <dt>分类</dt>
-            <dd>7</dd>
-          </div>
-          <div>
-            <dt>内容</dt>
-            <dd>88</dd>
-          </div>
-          <div>
-            <dt>最近更新</dt>
-            <dd><time datetime="2026-07-14">2026-07-14</time></dd>
-          </div>
-          <div>
-            <dt>类型</dt>
-            <dd>PDF 86 / PNG 1 / TXT 1</dd>
-          </div>
-        </dl>
-      </div>
+        <div>
+          <dt>内容</dt>
+          <dd>88</dd>
+        </div>
+        <div>
+          <dt>最近更新</dt>
+          <dd><time datetime="2026-07-14">2026-07-14</time></dd>
+        </div>
+        <div>
+          <dt>类型</dt>
+          <dd>PDF 86 / PNG 1 / TXT 1</dd>
+        </div>
+      </dl>
     </section>
 
     <section class="section-block" aria-labelledby="latest-title">
       <div class="section-heading">
-        <p class="eyebrow">Recently Updated</p>
-        <h2 id="latest-title">最近更新</h2>
+        <h2 id="latest-title"><span class="section-index">01</span>最近更新</h2>
+        <p class="section-note">Recently Updated</p>
       </div>
       <ol class="entry-list latest-list">
         <li class="entry-line">
@@ -115,8 +117,8 @@
 
     <section class="section-block" aria-labelledby="categories-title">
       <div class="section-heading">
-        <p class="eyebrow">Archives</p>
-        <h2 id="categories-title">分类归档</h2>
+        <h2 id="categories-title"><span class="section-index">02</span>分类归档</h2>
+        <p class="section-note">Archives</p>
       </div>
       <div class="category-grid">
         <article class="category-card">
@@ -424,6 +426,7 @@
   </main>
   <footer class="site-footer">
     <p>zhecai&#x27;s blog</p>
+    <p class="colophon">Generated statically · Hosted on GitHub Pages</p>
   </footer>
 </body>
 </html>
