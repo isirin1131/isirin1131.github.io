@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import html
 import json
 import re
@@ -126,8 +127,33 @@ def display_type(extension: str) -> str:
     return extension.upper() if extension else "FILE"
 
 
-def git_dates(path: Path) -> tuple[str | None, str | None]:
+def git_dirty_paths() -> set[str]:
+    """Return relative posix paths of files that have uncommitted changes or are untracked."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", "-z"],
+            cwd=ROOT,
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return set()
+
+    if result.returncode != 0:
+        return set()
+
+    dirty: set[str] = set()
+    for entry in result.stdout.split(b"\x00"):
+        if len(entry) > 3:
+            dirty.add(entry[3:].decode("utf-8", errors="replace"))
+    return dirty
+
+
+def git_dates(path: Path, dirty_paths: set[str] | None = None) -> tuple[str | None, str | None]:
     rel_path = path.relative_to(ROOT).as_posix()
+    today = datetime.date.today().isoformat()
+    is_dirty = (dirty_paths is not None and rel_path in dirty_paths)
+
     try:
         result = subprocess.run(
             ["git", "log", "--follow", "--format=%ad", "--date=short", "--", rel_path],
@@ -137,19 +163,28 @@ def git_dates(path: Path) -> tuple[str | None, str | None]:
             check=False,
         )
     except OSError:
-        return None, None
+        result = None
 
-    if result.returncode != 0:
-        return None, None
+    dates: list[str] = []
+    if result and result.returncode == 0:
+        dates = [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
-    dates = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     if not dates:
-        return None, None
+        # File has never been committed to git yet (newly added file).
+        # Use today's date directly so it doesn't render as "未记录"
+        # and doesn't require a second commit just to populate timestamps.
+        return today, today
 
-    return dates[-1], dates[0]
+    published = dates[-1]
+    # If the file has uncommitted changes in git, consider its updated date as today.
+    updated = today if is_dirty else dates[0]
+
+    return published, updated
 
 
-def collect_categories() -> list[Category]:
+def collect_categories(dirty_paths: set[str] | None = None) -> list[Category]:
+    if dirty_paths is None:
+        dirty_paths = git_dirty_paths()
     categories: list[Category] = []
 
     for path in ROOT.iterdir():
@@ -162,7 +197,7 @@ def collect_categories() -> list[Category]:
             if not item.is_file() or item.name.startswith("."):
                 continue
 
-            published, updated = git_dates(item)
+            published, updated = git_dates(item, dirty_paths)
             extension = item.suffix.lower().lstrip(".") or "file"
             entries.append(
                 Entry(
@@ -244,18 +279,20 @@ def gallery_folder_files(path: Path) -> tuple[Path | None, Path | None]:
     return (markdown_files[0] if markdown_files else None, image_files[0] if image_files else None)
 
 
-def gallery_item_date(markdown_path: Path, image_path: Path) -> str:
+def gallery_item_date(markdown_path: Path, image_path: Path, dirty_paths: set[str] | None = None) -> str:
     dates: list[str] = []
     for path in (markdown_path, image_path):
-        _, updated = git_dates(path)
+        _, updated = git_dates(path, dirty_paths)
         if updated:
             dates.append(updated)
     return max(dates) if dates else ""
 
 
-def collect_gallery_items() -> list[GalleryItem]:
+def collect_gallery_items(dirty_paths: set[str] | None = None) -> list[GalleryItem]:
     if not GALLERY_ITEMS_DIR.exists():
         return []
+    if dirty_paths is None:
+        dirty_paths = git_dirty_paths()
 
     items: list[GalleryItem] = []
     for path in sorted(GALLERY_ITEMS_DIR.iterdir(), key=lambda candidate: natural_sort_key(candidate.name)):
@@ -686,13 +723,13 @@ def clean_stale_pages(categories: list[Category]) -> None:
             path.unlink()
 
 
-def write_site(categories: list[Category]) -> None:
+def write_site(categories: list[Category], dirty_paths: set[str] | None = None) -> None:
     OBJECT_DIR.mkdir(exist_ok=True)
     ASSETS_DIR.mkdir(exist_ok=True)
     clean_stale_pages(categories)
 
     (ROOT / "index.html").write_text(render_home(categories), encoding="utf-8")
-    (ROOT / "gallery.html").write_text(render_gallery_page(collect_gallery_items()), encoding="utf-8")
+    (ROOT / "gallery.html").write_text(render_gallery_page(collect_gallery_items(dirty_paths)), encoding="utf-8")
     for category in categories:
         (OBJECT_DIR / category.output_name).write_text(
             render_archive_page(category, categories),
@@ -701,8 +738,9 @@ def write_site(categories: list[Category]) -> None:
 
 
 def main() -> None:
-    categories = collect_categories()
-    write_site(categories)
+    dirty_paths = git_dirty_paths()
+    categories = collect_categories(dirty_paths)
+    write_site(categories, dirty_paths)
 
 
 if __name__ == "__main__":
